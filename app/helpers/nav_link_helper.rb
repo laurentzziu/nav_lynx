@@ -5,8 +5,10 @@ module NavLinkHelper
     url_options  = args[0]
     html_options = args[1] || {}
     options      = args[2] || {}
+    constraint   = args[3] || nil
 
-    LinkGenerator.new(request, title, url_options, controller,html_options, options).to_html
+    LinkGenerator.new(request, title, url_options,
+                      controller, html_options, options, constraint).to_html
   end
 
   class LinkGenerator
@@ -15,13 +17,15 @@ module NavLinkHelper
 
     attr_reader :controller
 
-    def initialize(request, title, url_options, controller, html_options = {}, options = {})
+    def initialize(request, title, url_options,
+                   controller, html_options = {}, options = {}, constraint = nil)
       @request      = request
       @title        = title
       @url_options  = url_options
       @html_options = html_options
       @options      = options
       @controller   = controller
+      @constraint   = constraint
     end
 
     def to_html
@@ -45,7 +49,13 @@ module NavLinkHelper
     end
 
     def selected?
-      paths_match? || segments_match?
+      paths_match? || segments_match? || constraint_satisfied?
+    end
+
+    def constraint_satisfied?
+      return nil unless @constraint.present? &&
+        (@constraint.is_a?(Proc) || @constraint.is_a?(Lambda))
+      @constraint.call
     end
 
     def paths_match?
